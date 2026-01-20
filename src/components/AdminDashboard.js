@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-// Faltu imports hata diye hain taake Vercel error na de
+// Icons ko fix kiya gaya hai
 import { CheckCircle, Trash2, Clock, Filter, AlertCircle, ShieldCheck, Mail, Calendar, Image as ImageIcon } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -98,7 +98,7 @@ const AdminDashboard = () => {
               </div>
               <h1 className="text-4xl font-extrabold text-blue-800 tracking-tight">Admin Dashboard</h1>
             </div>
-            <p className="text-lg text-blue-600 ml-1">Manage and moderate campus lost & found reports.</p>
+            <p className="text-lg text-blue-600 ml-1">Manage campus reports.</p>
           </div>
         </div>
 
@@ -109,110 +109,46 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Filter Bar */}
-        <div className="mb-8 p-2 bg-white/70 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl flex flex-col sm:flex-row sm:inline-flex items-center gap-2 w-full sm:w-auto">
-          <div className="flex items-center text-blue-400 px-4">
-            <Filter size={18} className="mr-2" />
-            <span className="text-sm font-bold uppercase tracking-wider">Status</span>
-          </div>
-          <div className="flex gap-1 p-1">
-            {['all', 'pending', 'approved'].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
-                  filter === f ? 'bg-blue-600 text-white' : 'text-blue-500 hover:bg-blue-100'
-                }`}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="bg-white/80 backdrop-blur-2xl border border-white/60 rounded-[2.5rem] shadow-2xl overflow-hidden">
-          <div className="hidden lg:block">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-blue-50/50 border-b border-blue-100">
-                  <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase tracking-widest">Image</th>
-                  <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase tracking-widest">Item Information</th>
-                  <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase tracking-widest">Status</th>
-                  <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase tracking-widest">Reporter</th>
-                  <th className="px-8 py-6 text-right text-xs font-bold text-blue-400 uppercase tracking-widest">Management</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-blue-100">
-                <AnimatePresence mode="popLayout">
-                  {filteredItems.map((item) => {
-                    const status = getStatusConfig(item.status);
-                    return (
-                      <motion.tr
-                        key={item._id}
-                        layout
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="group hover:bg-slate-50/30 transition-colors"
-                      >
-                        <td className="px-8 py-7">
-                          {item.image ? (
-                            <img 
-                              src={`https://campus-lost-and-found-backend.vercel.app/uploads/${item.image}`} 
-                              alt="Item" 
-                              className="w-16 h-16 object-cover rounded-xl border border-blue-100"
-                            />
-                          ) : (
-                            <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center text-slate-300">
-                              <ImageIcon size={20} />
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-8 py-7">
-                          <div className="font-bold text-blue-800 text-lg mb-1">{item.title}</div>
-                          <div className="text-blue-600 max-w-md line-clamp-2">{item.description}</div>
-                          <div className="flex items-center text-xs font-bold text-blue-400 mt-3">
-                            <Calendar size={12} className="mr-1.5" />
-                            {new Date(item.createdAt).toLocaleDateString()}
-                          </div>
-                        </td>
-                        <td className="px-8 py-7">
-                          <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-extrabold border ${status.bg} ${status.text} ${status.border}`}>
-                            {status.icon}
-                            {item.status.toUpperCase()}
-                          </div>
-                        </td>
-                        <td className="px-8 py-7 text-slate-900 text-base">
-                          <div className="flex items-center">
-                            <Mail size={16} className="mr-2 text-blue-400" />
-                            {item.reporterEmail || (item.createdBy?.email) || "N/A"}
-                          </div>
-                        </td>
-                        <td className="px-8 py-7 text-right">
-                          <div className="flex justify-end space-x-3">
-                            {item.status === 'pending' && (
-                              <button
-                                onClick={() => handleApprove(item._id)}
-                                className="p-3 bg-white border border-emerald-100 text-emerald-600 rounded-2xl hover:bg-emerald-600 hover:text-white transition-all"
-                              >
-                                <CheckCircle size={22} />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDelete(item._id)}
-                              className="p-3 bg-white border border-red-100 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all"
-                            >
-                              <Trash2 size={22} />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </AnimatePresence>
-              </tbody>
-            </table>
-          </div>
+          <table className="w-full">
+            <thead>
+              <tr className="bg-blue-50/50 border-b border-blue-100">
+                <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase tracking-widest">Item</th>
+                <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase tracking-widest">Status</th>
+                <th className="px-8 py-6 text-right text-xs font-bold text-blue-400 uppercase tracking-widest">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredItems.map((item) => {
+                const status = getStatusConfig(item.status);
+                return (
+                  <tr key={item._id} className="border-b border-blue-50">
+                    <td className="px-8 py-7">
+                      <div className="font-bold text-blue-800">{item.title}</div>
+                      <div className="text-sm text-blue-500">{item.description}</div>
+                    </td>
+                    <td className="px-8 py-7">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${status.bg} ${status.text}`}>
+                        {status.icon} {item.status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-8 py-7 text-right">
+                      <div className="flex justify-end space-x-2">
+                        {item.status === 'pending' && (
+                          <button onClick={() => handleApprove(item._id)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg">
+                            <CheckCircle size={20} />
+                          </button>
+                        )}
+                        <button onClick={() => handleDelete(item._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </main>
     </div>
