@@ -21,7 +21,6 @@ const Comment = ({ comment, allComments, onReply, itemOwnerId, isReply = false }
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
       className={`p-4 rounded-2xl bg-white/50 border border-blue-200/50 shadow-inner backdrop-blur-md ${isReplyItem ? 'mt-3 ml-6 border-l-4 border-blue-300/80' : 'mb-3'}`}
     >
       <div className="flex items-center justify-between mb-2">
