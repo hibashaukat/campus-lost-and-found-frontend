@@ -247,30 +247,44 @@ const StudentDashboard = () => {
     return () => clearInterval(interval);
   }, [fetchItems]);
 
-  const onSubmit = async e => {
+ const onSubmit = async e => {
     e.preventDefault();
     setLoading(true);
+    
     try {
         const token = localStorage.getItem('token');
         const data = new FormData();
         data.append('title', formData.title);
         data.append('description', formData.description);
-        if (formData.selectedFile) data.append('image', formData.selectedFile);
+        
+        // Ensure file exists before appending
+        if (formData.selectedFile) {
+            data.append('image', formData.selectedFile);
+        }
 
-        await axios.post('/api/items', data, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        // Headers mein content-type batana zaroori hai files ke liye
+        const config = {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data' 
+            }
+        };
 
-        alert('Reported successfully!');
-        setFormData({ title: '', description: '', selectedFile: null });
-        fetchItems();
+        const response = await axios.post('/api/items', data, config);
+
+        if (response.status === 201 || response.status === 200) {
+            alert('Item reported! Please wait for admin approval.');
+            setFormData({ title: '', description: '', selectedFile: null });
+            fetchItems();
+        }
     } catch (err) {
-        console.error('Failed to report item');
+        console.error('Full Error:', err);
+        const errorMessage = err.response?.data?.message || 'Server is not responding. Check your internet or backend.';
+        alert('Error: ' + errorMessage);
     } finally {
         setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white pb-12">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
