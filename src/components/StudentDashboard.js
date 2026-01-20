@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, CheckCircle, Clock, User, Tag, MessageCircle, Reply as ReplyIcon } from 'lucide-react';
-
+import { CheckCircle, Clock, User, Tag, MessageCircle, Reply as ReplyIcon } from 'lucide-react';
 const Comment = ({ comment, allComments, onReply, itemOwnerId, isReply = false }) => {
   const replies = allComments.filter(c => c.parentCommentId === comment._id);
   const [isReplying, setIsReplying] = useState(false);
