@@ -2,7 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Clock, User, Tag, MessageCircle, Reply as ReplyIcon } from 'lucide-react';
+import { CheckCircle, Clock, User, Tag, MessageCircle, Reply as ReplyIcon, Image as ImageIcon } from 'lucide-react';
+
+// Backend URL Constant
+const BACKEND_URL = "https://campus-lost-and-found-backend.vercel.app";
+
 const Comment = ({ comment, allComments, onReply, itemOwnerId, isReply = false }) => {
   const replies = allComments.filter(c => c.parentCommentId === comment._id);
   const [isReplying, setIsReplying] = useState(false);
@@ -17,35 +21,20 @@ const Comment = ({ comment, allComments, onReply, itemOwnerId, isReply = false }
   };
 
   const CommentCard = ({ cmt, isReplyItem }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className={`p-4 rounded-2xl bg-white/50 border border-blue-200/50 shadow-inner backdrop-blur-md ${isReplyItem ? 'mt-3 ml-6 border-l-4 border-blue-300/80' : 'mb-3'}`}
-    >
+    <div className={`p-4 rounded-2xl bg-white/50 border border-blue-200/50 shadow-inner backdrop-blur-md ${isReplyItem ? 'mt-3 ml-6 border-l-4 border-blue-300/80' : 'mb-3'}`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
           <User size={14} className="text-blue-500" />
           <span className="text-sm font-semibold text-blue-700">{cmt.userId?.email?.split('@')[0] || 'User'}</span>
-          {cmt.userId?.role === 'admin' ? (
-            <span className="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded-full font-medium">Admin</span>
-          ) : cmt.userId?._id === itemOwnerId ? (
-            <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full font-medium">Owner</span>
-          ) : (
-            <span className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-full font-medium">Student</span>
-          )}
         </div>
         <span className="text-xs text-slate-500">{new Date(cmt.createdAt).toLocaleString()}</span>
       </div>
       <p className="text-sm text-slate-700">{cmt.content}</p>
       
       {!isReplyItem && (
-        <button 
-            onClick={() => setIsReplying(!isReplying)}
-            className="mt-2 text-xs font-medium text-blue-500 hover:text-blue-700 transition-colors flex items-center"
-        >
-            <ReplyIcon size={12} className="mr-1" />
-            {isReplying ? 'Cancel Reply' : 'Reply'}
+        <button onClick={() => setIsReplying(!isReplying)} className="mt-2 text-xs font-medium text-blue-500 flex items-center">
+          <ReplyIcon size={12} className="mr-1" />
+          {isReplying ? 'Cancel' : 'Reply'}
         </button>
       )}
 
@@ -56,17 +45,14 @@ const Comment = ({ comment, allComments, onReply, itemOwnerId, isReply = false }
             onChange={(e) => setReplyContent(e.target.value)}
             placeholder="Write a reply..."
             rows="2"
-            className="w-full px-4 py-2 text-sm bg-white/70 border border-blue-300/50 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none"
+            className="w-full px-4 py-2 text-sm border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <button
-            onClick={handleReplySubmit}
-            className="mt-2 px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-lg transition-colors"
-          >
+          <button onClick={handleReplySubmit} className="mt-2 px-3 py-1 bg-blue-500 text-white text-xs rounded-lg">
             Post Reply
           </button>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 
   return (
@@ -74,18 +60,9 @@ const Comment = ({ comment, allComments, onReply, itemOwnerId, isReply = false }
       <CommentCard cmt={comment} isReplyItem={isReply} />
       {replies.length > 0 && (
         <div className="pl-4">
-          <AnimatePresence>
-            {replies.map(reply => (
-              <Comment
-                key={reply._id}
-                comment={reply}
-                allComments={allComments}
-                onReply={onReply}
-                itemOwnerId={itemOwnerId}
-                isReply={true}
-              />
-            ))}
-          </AnimatePresence>
+          {replies.map(reply => (
+            <Comment key={reply._id} comment={reply} allComments={allComments} onReply={onReply} itemOwnerId={itemOwnerId} isReply={true} />
+          ))}
         </div>
       )}
     </>
@@ -101,128 +78,97 @@ const ItemCard = ({ item, onCommentPosted, setSelectedImg }) => {
     const fetchComments = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`/api/comments/${item._id}`, {
+            const res = await axios.get(`${BACKEND_URL}/api/comments/${item._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setComments(res.data);
-        } catch (err) {
-            console.error('Failed to fetch comments:', err);
-        }
+        } catch (err) { console.error('Comments fetch error'); }
     }, [item._id]);
 
     useEffect(() => {
         fetchComments();
-        const interval = setInterval(fetchComments, 5000); 
-        return () => clearInterval(interval);
     }, [fetchComments]);
 
     const handlePostComment = async (reportId, content, parentCommentId = null) => {
         setCommentLoading(true);
-        setError('');
         try {
             const token = localStorage.getItem('token');
-            await axios.post('/api/comments', { reportId, content, parentCommentId }, {
+            await axios.post(`${BACKEND_URL}/api/comments`, { reportId, content, parentCommentId }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            fetchComments(); 
-            onCommentPosted(); 
-        } catch (err) {
-            setError(err.response?.data?.message || 'Failed to post comment');
-        } finally {
-            setCommentLoading(false);
-        }
-    };
-
-    const handleMainCommentSubmit = () => {
-        if (commentContent.trim()) {
-            handlePostComment(item._id, commentContent);
-            setCommentContent('');
-        }
+            fetchComments();
+            onCommentPosted();
+        } catch (err) { setError('Failed to post'); }
+        finally { setCommentLoading(false); }
     };
 
     return (
-        <motion.div
-            key={item._id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="group bg-white rounded-[2rem] p-6 border border-blue-200 hover:border-blue-300 transition-all duration-300 relative overflow-hidden"
-        >
-            <div className="flex flex-col">
-                <div className="mb-4">
-                    {item.image && (
-                        <div className="relative mb-4">
-                            <img 
-                                src={`https://campus-lost-and-found-backend.vercel.app/uploads/${item.image}`} 
-                                alt={item.title}
-                                onClick={() => setSelectedImg(`https://campus-lost-and-found-backend.vercel.app/uploads/${item.image}`)}
-                                className="w-full h-48 object-cover rounded-lg cursor-pointer"
-                            />
+        <div className="bg-white rounded-[2rem] p-6 border border-blue-200 shadow-sm mb-6">
+            {/* Image Section Fix */}
+            <div className="mb-4">
+                {item.image ? (
+                    <div className="relative group">
+                        <img 
+                            src={`${BACKEND_URL}/uploads/${item.image}`} 
+                            alt={item.title}
+                            onClick={() => setSelectedImg(`${BACKEND_URL}/uploads/${item.image}`)}
+                            className="w-full h-64 object-cover rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                            }}
+                        />
+                        <div style={{display: 'none'}} className="w-full h-64 bg-slate-100 rounded-2xl flex-col items-center justify-center text-slate-400">
+                             <ImageIcon size={40} className="mb-2" />
+                             <span>Image not available</span>
                         </div>
-                    )}
+                    </div>
+                ) : (
+                    <div className="w-full h-48 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 border-2 border-dashed">
+                        <ImageIcon size={32} />
+                    </div>
+                )}
+            </div>
 
-                    <div className="absolute top-6 right-6 flex items-center space-x-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold border border-emerald-200">
-                        <CheckCircle size={12} />
-                        <span>Approved</span>
-                    </div>
+            <div className="flex justify-between items-start mb-4">
+                <h3 className="text-2xl font-bold text-blue-800">{item.title}</h3>
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">Approved</span>
+            </div>
+            
+            <p className="text-blue-600 mb-6 leading-relaxed">{item.description}</p>
 
-                    <div className="p-3 bg-blue-50 w-fit rounded-2xl mb-4 text-blue-500">
-                      <Tag size={20} />
-                    </div>
-                    <h3 className="text-xl font-bold text-blue-800 mb-2">{item.title}</h3>
-                    <p className="text-blue-600 line-clamp-3 leading-relaxed">{item.description}</p>
-                </div>
-
-                <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between text-sm">
-                    <div className="flex items-center text-slate-400 font-medium">
-                        <Clock size={16} className="mr-1.5" />
-                        {new Date(item.createdAt).toLocaleDateString()}
-                    </div>
-                    <div className="flex items-center text-blue-600 font-bold bg-blue-50 px-3 py-1 rounded-lg">
-                        <User size={16} className="mr-1.5" />
-                        {item.createdBy?.email?.split('@')[0] || 'User'}
-                    </div>
+            <div className="flex items-center justify-between text-sm text-slate-400 pb-6 border-b border-blue-50">
+                <div className="flex items-center"><Clock size={16} className="mr-1" /> {new Date(item.createdAt).toLocaleDateString()}</div>
+                <div className="flex items-center font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                    <User size={16} className="mr-1" /> {item.createdBy?.email?.split('@')[0] || 'User'}
                 </div>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-blue-100">
-                <h4 className="flex items-center text-lg font-bold text-blue-700 mb-4">
-                    <MessageCircle size={18} className="mr-2" />
-                    Discussion ({comments.length})
+            {/* Comments Section */}
+            <div className="mt-6">
+                <h4 className="font-bold text-blue-700 flex items-center mb-4">
+                    <MessageCircle size={18} className="mr-2" /> Discussion ({comments.length})
                 </h4>
-                
-                <div className="mb-6 p-4 bg-white/50 border border-blue-300/50 rounded-2xl">
-                    <textarea
-                        value={commentContent}
-                        onChange={(e) => setCommentContent(e.target.value)}
-                        placeholder="Post a comment..."
-                        rows="3"
-                        className="w-full px-4 py-2 text-sm bg-white border border-blue-300/50 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none"
-                        disabled={commentLoading}
-                    />
-                    {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
-                    <button
-                        onClick={handleMainCommentSubmit}
-                        disabled={!commentContent.trim() || commentLoading}
-                        className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors float-right"
-                    >
-                        {commentLoading ? 'Posting...' : 'Post Comment'}
-                    </button>
-                    <div className="clear-both"></div>
-                </div>
-
-                <div className="space-y-3">
-                    {comments.filter(c => !c.parentCommentId).map(comment => (
-                        <Comment 
-                            key={comment._id} 
-                            comment={comment}
-                            allComments={comments}
-                            onReply={handlePostComment}
-                            itemOwnerId={item.createdBy?._id || item.createdBy}
-                        />
+                <div className="space-y-4">
+                    {comments.filter(c => !c.parentCommentId).map(c => (
+                        <Comment key={c._id} comment={c} allComments={comments} onReply={handlePostComment} itemOwnerId={item.createdBy?._id} />
                     ))}
                 </div>
+                <div className="mt-4 flex gap-2">
+                    <input 
+                        className="flex-1 px-4 py-2 border rounded-xl outline-none focus:border-blue-500" 
+                        placeholder="Write a comment..."
+                        value={commentContent}
+                        onChange={(e) => setCommentContent(e.target.value)}
+                    />
+                    <button 
+                        onClick={() => { if(commentContent.trim()){ handlePostComment(item._id, commentContent); setCommentContent(''); }}}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold"
+                    >Post</button>
+                </div>
             </div>
-        </motion.div>
+        </div>
     );
 };
 
@@ -236,23 +182,17 @@ const StudentDashboard = () => {
   const fetchItems = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/items/approved', {
+      const res = await axios.get(`${BACKEND_URL}/api/items/approved`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setItems(res.data);
     } catch (err) {
-      if (err.response?.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/login');
-      }
-      console.error('Failed to load items');
+      if (err.response?.status === 401) navigate('/login');
     }
   }, [navigate]);
 
   useEffect(() => {
     fetchItems();
-    const interval = setInterval(fetchItems, 10000);
-    return () => clearInterval(interval);
   }, [fetchItems]);
 
   const onSubmit = async e => {
@@ -265,76 +205,45 @@ const StudentDashboard = () => {
         data.append('description', formData.description);
         if (formData.selectedFile) data.append('image', formData.selectedFile);
 
-        await axios.post('/api/items', data, {
+        await axios.post(`${BACKEND_URL}/api/items`, data, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        alert('Reported successfully!');
+        alert('Reported! Wait for admin approval.');
         setFormData({ title: '', description: '', selectedFile: null });
         fetchItems();
-    } catch (err) {
-        console.error('Failed to report item');
-    } finally {
-        setLoading(false);
-    }
+    } catch (err) { alert('Failed to report'); }
+    finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white pb-12">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <div className="mb-12">
-          <h1 className="text-4xl font-extrabold text-blue-800 mb-2">Student Dashboard</h1>
-          <p className="text-lg text-blue-600">Browse found valuables across campus.</p>
-        </div>
-
+    <div className="min-h-screen bg-slate-50 pb-12">
+      <main className="max-w-7xl mx-auto px-4 pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-4">
-            <div className="sticky top-28 bg-white p-8 rounded-3xl border shadow-xl">
-              <h2 className="text-2xl font-bold text-blue-700 mb-6">Report Item</h2>
-              <form onSubmit={onSubmit} className="space-y-5">
-                <input
-                  type="text"
-                  placeholder="Item Title"
-                  value={formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
-                  className="w-full px-5 py-4 bg-slate-50 border rounded-2xl outline-none focus:border-blue-500"
-                  required
-                />
-                <textarea
-                  placeholder="Description"
-                  value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
-                  className="w-full px-5 py-4 bg-slate-50 border rounded-2xl outline-none focus:border-blue-500"
-                  rows="4"
-                  required
-                />
-                <input
-                  type="file"
-                  onChange={e => setFormData({...formData, selectedFile: e.target.files[0]})}
-                  className="w-full text-sm"
-                />
-                <button disabled={loading} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold">
-                  {loading ? 'Reporting...' : 'Report Item'}
-                </button>
+            <div className="bg-white p-6 rounded-3xl border shadow-sm sticky top-24">
+              <h2 className="text-xl font-bold text-blue-800 mb-4">New Report</h2>
+              <form onSubmit={onSubmit} className="space-y-4">
+                <input className="w-full p-3 bg-slate-50 border rounded-xl outline-none" placeholder="What did you find?" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
+                <textarea className="w-full p-3 bg-slate-50 border rounded-xl outline-none" rows="3" placeholder="Details..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} required />
+                <input type="file" className="text-xs" onChange={e => setFormData({...formData, selectedFile: e.target.files[0]})} />
+                <button className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold">{loading ? 'Uploading...' : 'Submit Report'}</button>
               </form>
             </div>
           </div>
-
           <div className="lg:col-span-8">
-            <div className="grid grid-cols-1 gap-6">
-              {items.map(item => (
-                <ItemCard key={item._id} item={item} onCommentPosted={fetchItems} setSelectedImg={setSelectedImg} />
-              ))}
-            </div>
+            {items.map(item => <ItemCard key={item._id} item={item} onCommentPosted={fetchItems} setSelectedImg={setSelectedImg} />)}
           </div>
         </div>
       </main>
 
-      {selectedImg && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4" onClick={() => setSelectedImg(null)}>
-          <img src={selectedImg} alt="Full View" className="max-w-full max-h-full object-contain" />
-        </div>
-      )}
+      <AnimatePresence>
+        {selectedImg && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4" onClick={() => setSelectedImg(null)}>
+            <img src={selectedImg} className="max-w-full max-h-full rounded-xl" alt="Preview" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
