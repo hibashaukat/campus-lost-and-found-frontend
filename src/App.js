@@ -7,7 +7,8 @@ import AdminDashboard from './components/AdminDashboard';
 import StudentDashboard from './components/StudentDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
-
+// 2. Ye line saare imports ke niche aur component se upar likhein
+axios.defaults.baseURL = 'https://campus-lost-and-found-backend.vercel.app';
 // Page transition variants
 const pageVariants = {
   initial: { opacity: 0, y: 10 },
