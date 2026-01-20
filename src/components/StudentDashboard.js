@@ -187,11 +187,11 @@ const ItemCard = ({ item, onCommentPosted, setSelectedImg }) => {
                     {/* Item Image */}
                     {item.image && (
                      <div className="relative group">
-  <img 
-  src={`http://https://campus-lost-and-found-backend.vercel.app:5000/uploads/${item.image}`} 
+  // Sahi Code:
+<img 
+  src={`https://campus-lost-and-found-backend.vercel.app/uploads/${item.image}`} 
   alt={item.title}
-  // Yahan check karein ke spelling bilkul 'setSelectedImg' hi ho
-  onClick={() => setSelectedImg(`http://https://campus-lost-and-found-backend.vercel.app:5000/uploads/${item.image}`)}
+  onClick={() => setSelectedImg(`https://campus-lost-and-found-backend.vercel.app/uploads/${item.image}`)}
   className="w-full h-48 object-cover rounded-lg cursor-pointer"
 />
   <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
