@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { CheckCircle, Trash2, Clock, AlertCircle, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 
@@ -7,14 +7,10 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Backend ka pura URL yahan check karlein sahi hai ya nahi
+  // Backend URL
   const BACKEND_URL = "https://campus-lost-and-found-backend.vercel.app";
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -22,12 +18,17 @@ const AdminDashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setItems(res.data);
+      setError(''); // Clear error on success
     } catch (err) {
       setError('Failed to load items. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [BACKEND_URL]);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const handleApprove = async (itemId) => {
     try {
@@ -35,7 +36,7 @@ const AdminDashboard = () => {
       await axios.put(`${BACKEND_URL}/api/items/${itemId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setItems(items.map(item =>
+      setItems(prevItems => prevItems.map(item =>
         item._id === itemId ? { ...item, status: 'approved' } : item
       ));
     } catch (err) {
@@ -50,7 +51,7 @@ const AdminDashboard = () => {
       await axios.delete(`${BACKEND_URL}/api/items/${itemId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setItems(items.filter(item => item._id !== itemId));
+      setItems(prevItems => prevItems.filter(item => item._id !== itemId));
     } catch (err) {
       setError('Failed to delete item');
     }
@@ -88,7 +89,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-blue-100">
+        <div className="bg-white rounded-[2rem] shadow-xl overflow-x-auto border border-blue-100">
           <table className="w-full text-left border-collapse">
             <thead className="bg-blue-50">
               <tr>
@@ -99,51 +100,57 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-blue-50">
-              {items.map((item) => {
-                const status = getStatusConfig(item.status);
-                return (
-                  <tr key={item._id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      {item.image ? (
-                        <img 
-                          src={`${BACKEND_URL}/uploads/${item.image}`} 
-                          alt="Item" 
-                          className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                          onError={(e) => {
-                            e.target.onerror = null; 
-                            e.target.src = "https://via.placeholder.com/150?text=No+Pic";
-                          }}
-                        />
-                      ) : (
-                        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-                          <ImageIcon size={20} />
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-blue-800">{item.title}</div>
-                      <div className="text-sm text-gray-500 line-clamp-1">{item.description}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${status.bg} ${status.text}`}>
-                        {status.icon} {item.status.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end space-x-2">
-                        {item.status === 'pending' && (
-                          <button onClick={() => handleApprove(item._id)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg">
-                            <CheckCircle size={20} />
-                          </button>
+              {items.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="px-6 py-10 text-center text-slate-400">No items found.</td>
+                </tr>
+              ) : (
+                items.map((item) => {
+                  const status = getStatusConfig(item.status);
+                  return (
+                    <tr key={item._id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        {item.image ? (
+                          <img 
+                            src={item.image} 
+                            alt="Item" 
+                            className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                            onError={(e) => {
+                              e.target.onerror = null; 
+                              e.target.src = "https://via.placeholder.com/150?text=No+Pic";
+                            }}
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+                            <ImageIcon size={20} />
+                          </div>
                         )}
-                        <button onClick={() => handleDelete(item._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-blue-800">{item.title}</div>
+                        <div className="text-sm text-gray-500 line-clamp-1">{item.description}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${status.bg} ${status.text}`}>
+                          {status.icon} {item.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end space-x-2">
+                          {item.status === 'pending' && (
+                            <button onClick={() => handleApprove(item._id)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg" title="Approve">
+                              <CheckCircle size={20} />
+                            </button>
+                          )}
+                          <button onClick={() => handleDelete(item._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Delete">
+                            <Trash2 size={20} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
