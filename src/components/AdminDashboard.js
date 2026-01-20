@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
-// Icons ko fix kiya gaya hai
-import { CheckCircle, Trash2, Clock, Filter, AlertCircle, ShieldCheck, Mail, Calendar, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle, Trash2, Clock, AlertCircle, ShieldCheck } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     fetchItems();
@@ -56,27 +53,20 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredItems = items.filter(item => {
-    if (filter === 'all') return true;
-    return item.status === filter;
-  });
-
   const getStatusConfig = (status) => {
     const configs = {
       approved: {
         bg: "bg-emerald-100",
         text: "text-emerald-700",
-        border: "border-emerald-200",
         icon: <CheckCircle size={14} className="mr-1" />
       },
       pending: {
         bg: "bg-amber-100",
         text: "text-amber-700",
-        border: "border-amber-200",
         icon: <Clock size={14} className="mr-1" />
       }
     };
-    return configs[status] || { bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-100", icon: null };
+    return configs[status] || { bg: "bg-blue-50", text: "text-blue-600", icon: null };
   };
 
   if (loading) {
@@ -98,31 +88,30 @@ const AdminDashboard = () => {
               </div>
               <h1 className="text-4xl font-extrabold text-blue-800 tracking-tight">Admin Dashboard</h1>
             </div>
-            <p className="text-lg text-blue-600 ml-1">Manage campus reports.</p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center text-red-700 font-medium">
-            <AlertCircle className="w-5 h-5 mr-3 flex-shrink-0" />
+          <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center text-red-700">
+            <AlertCircle className="w-5 h-5 mr-3" />
             {error}
           </div>
         )}
 
-        <div className="bg-white/80 backdrop-blur-2xl border border-white/60 rounded-[2.5rem] shadow-2xl overflow-hidden">
+        <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-blue-100">
           <table className="w-full">
-            <thead>
-              <tr className="bg-blue-50/50 border-b border-blue-100">
-                <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase tracking-widest">Item</th>
-                <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase tracking-widest">Status</th>
-                <th className="px-8 py-6 text-right text-xs font-bold text-blue-400 uppercase tracking-widest">Actions</th>
+            <thead className="bg-blue-50">
+              <tr>
+                <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase">Item</th>
+                <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase">Status</th>
+                <th className="px-8 py-6 text-right text-xs font-bold text-blue-400 uppercase">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredItems.map((item) => {
+            <tbody className="divide-y divide-blue-50">
+              {items.map((item) => {
                 const status = getStatusConfig(item.status);
                 return (
-                  <tr key={item._id} className="border-b border-blue-50">
+                  <tr key={item._id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-8 py-7">
                       <div className="font-bold text-blue-800">{item.title}</div>
                       <div className="text-sm text-blue-500">{item.description}</div>
@@ -133,14 +122,14 @@ const AdminDashboard = () => {
                       </span>
                     </td>
                     <td className="px-8 py-7 text-right">
-                      <div className="flex justify-end space-x-2">
+                      <div className="flex justify-end space-x-3">
                         {item.status === 'pending' && (
                           <button onClick={() => handleApprove(item._id)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg">
-                            <CheckCircle size={20} />
+                            <CheckCircle size={22} />
                           </button>
                         )}
                         <button onClick={() => handleDelete(item._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                          <Trash2 size={20} />
+                          <Trash2 size={22} />
                         </button>
                       </div>
                     </td>
