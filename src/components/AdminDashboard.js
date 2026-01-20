@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { CheckCircle, Trash2, Clock, AlertCircle, ShieldCheck } from 'lucide-react';
+import { CheckCircle, Trash2, Clock, AlertCircle, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Backend URL ko aik jagah rakhna behtar hai
+  const BACKEND_URL = "https://campus-lost-and-found-backend.vercel.app";
 
   useEffect(() => {
     fetchItems();
@@ -15,7 +18,7 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/items', {
+      const res = await axios.get(`${BACKEND_URL}/api/items`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setItems(res.data);
@@ -29,7 +32,7 @@ const AdminDashboard = () => {
   const handleApprove = async (itemId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`/api/items/${itemId}`, {}, {
+      await axios.put(`${BACKEND_URL}/api/items/${itemId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setItems(items.map(item =>
@@ -44,7 +47,7 @@ const AdminDashboard = () => {
     if (!window.confirm('Are you sure you want to delete this report?')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/items/${itemId}`, {
+      await axios.delete(`${BACKEND_URL}/api/items/${itemId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setItems(items.filter(item => item._id !== itemId));
@@ -81,13 +84,11 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white pb-12">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <div className="flex items-center justify-between mb-10">
-          <div>
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="p-2 bg-blue-600 rounded-xl text-white">
-                <ShieldCheck size={28} />
-              </div>
-              <h1 className="text-4xl font-extrabold text-blue-800 tracking-tight">Admin Dashboard</h1>
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="p-2 bg-blue-600 rounded-xl text-white">
+              <ShieldCheck size={28} />
             </div>
+            <h1 className="text-4xl font-extrabold text-blue-800 tracking-tight">Admin Dashboard</h1>
           </div>
         </div>
 
@@ -102,7 +103,8 @@ const AdminDashboard = () => {
           <table className="w-full">
             <thead className="bg-blue-50">
               <tr>
-                <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase">Item</th>
+                <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase">Image</th>
+                <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase">Item Info</th>
                 <th className="px-8 py-6 text-left text-xs font-bold text-blue-400 uppercase">Status</th>
                 <th className="px-8 py-6 text-right text-xs font-bold text-blue-400 uppercase">Actions</th>
               </tr>
@@ -112,23 +114,44 @@ const AdminDashboard = () => {
                 const status = getStatusConfig(item.status);
                 return (
                   <tr key={item._id} className="hover:bg-slate-50/50 transition-colors">
+                    {/* Picture Column Fix */}
                     <td className="px-8 py-7">
-                      <div className="font-bold text-blue-800">{item.title}</div>
-                      <div className="text-sm text-blue-500">{item.description}</div>
+                      {item.image ? (
+                        <img 
+                          src={`${BACKEND_URL}/uploads/${item.image}`} 
+                          alt="Item" 
+                          className="w-16 h-16 object-cover rounded-xl border border-blue-100 shadow-sm"
+                          onError={(e) => {
+                            e.target.onerror = null; 
+                            e.target.src = "https://via.placeholder.com/150?text=No+Image";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center text-slate-300">
+                          <ImageIcon size={20} />
+                        </div>
+                      )}
                     </td>
+                    
+                    <td className="px-8 py-7">
+                      <div className="font-bold text-blue-800 text-lg">{item.title}</div>
+                      <div className="text-sm text-blue-500 line-clamp-1">{item.description}</div>
+                    </td>
+                    
                     <td className="px-8 py-7">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${status.bg} ${status.text}`}>
                         {status.icon} {item.status.toUpperCase()}
                       </span>
                     </td>
+                    
                     <td className="px-8 py-7 text-right">
                       <div className="flex justify-end space-x-3">
                         {item.status === 'pending' && (
-                          <button onClick={() => handleApprove(item._id)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg">
+                          <button onClick={() => handleApprove(item._id)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
                             <CheckCircle size={22} />
                           </button>
                         )}
-                        <button onClick={() => handleDelete(item._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                        <button onClick={() => handleDelete(item._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                           <Trash2 size={22} />
                         </button>
                       </div>
